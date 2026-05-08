@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+html { color-scheme: dark; }
+
+body {
+  background: linear-gradient(180deg, #a5f3fc 0%, #06b6d4 22%, #164e63 55%, #030c0f 100%);
+  background-attachment: fixed;
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+*::-webkit-scrollbar { width: 0; height: 0; }
+
+@layer components {
+  .card {
+    @apply rounded-2xl p-4;
+    background: rgba(10,8,20,0.55);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1), 0 4px 24px rgba(0,0,0,0.3);
+  }
+
+  .card-glow {
+    @apply card;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.12),
+      0 0 0 1px rgba(168,85,247,0.2),
+      0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .btn {
+    @apply rounded-xl font-semibold px-4 py-3 inline-flex items-center justify-center gap-2
+           transition-all active:scale-[0.97] text-sm;
+  }
+
+  .btn-primary {
+    @apply btn text-white;
+    background: linear-gradient(135deg, rgba(168,85,247,0.75), rgba(6,182,212,0.65));
+    border: 1px solid rgba(168,85,247,0.4);
+    box-shadow: 0 4px 20px rgba(168,85,247,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, rgba(168,85,247,0.9), rgba(6,182,212,0.8));
+    box-shadow: 0 6px 28px rgba(168,85,247,0.45), inset 0 1px 0 rgba(255,255,255,0.25);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    @apply btn text-white;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.1);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .btn-ghost:hover {
+    background: rgba(255,255,255,0.13);
+    border-color: rgba(255,255,255,0.22);
+  }
+
+  .input {
+    @apply w-full rounded-xl px-3 py-3 text-sm text-white
+           placeholder:text-white/30 outline-none transition-all;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .input:focus {
+    border-color: rgba(168,85,247,0.6);
+    box-shadow: 0 0 0 3px rgba(168,85,247,0.15);
+    background: rgba(255,255,255,0.1);
+  }
+
+  .label {
+    @apply text-xs uppercase tracking-widest font-semibold;
+    color: rgba(255,255,255,0.35);
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #c084fc, #00d4ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+.safe-bottom { padding-bottom: max(env(safe-area-inset-bottom), 12px); }
+.safe-top    { padding-top:    max(env(safe-area-inset-top),    8px); }

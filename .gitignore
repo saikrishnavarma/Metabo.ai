@@ -1,0 +1,40 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables (NEVER commit these)
+.env
+.env.local
+.env.*.local
+
+# iOS build artifacts
+ios/App/App/public/
+ios/App/DerivedData/
+ios/App/Pods/
+*.xcworkspace/xcuserdata
+*.xcodeproj/xcuserdata
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V7
+.Trashes
+
+# Logs
+*.log
+npm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Vite cache
+.vite/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
