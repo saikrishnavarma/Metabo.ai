@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Metabo.ai — Shortcut Demo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0f172a;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    color: white;
+  }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .subtitle { font-size: 14px; color: #71717a; margin-bottom: 48px; }
+
+  .flow {
+    display: flex;
+    gap: 32px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .step { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .step-label {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    color: #a855f7; text-transform: uppercase;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 220px; height: 420px;
+    background: #111827;
+    border-radius: 36px;
+    border: 2px solid rgba(255,255,255,0.15);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.5);
+  }
+  .phone::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 90px; height: 26px;
+    background: #111827;
+    border-radius: 0 0 18px 18px;
+    z-index: 10;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top: none;
+  }
+
+  /* Home screen */
+  .home-bg {
+    width: 100%; height: 100%;
+    background: linear-gradient(160deg, #1e1b4b 0%, #0f172a 60%);
+    padding: 52px 16px 16px;
+    position: relative;
+  }
+  .time { font-size: 36px; font-weight: 300; text-align: center; margin-bottom: 4px; }
+  .date-str { font-size: 11px; color: rgba(255,255,255,0.5); text-align: center; margin-bottom: 20px; }
+
+  .icon-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+  .app-icon {
+    width: 52px; height: 52px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; position: relative;
+  }
+  .app-label { font-size: 9px; text-align: center; margin-top: 3px; color: rgba(255,255,255,0.8); }
+  .icon-wrap { display: flex; flex-direction: column; align-items: center; }
+
+  .shortcut-icon {
+    background: linear-gradient(135deg, #a855f7, #00d4ff);
+    box-shadow: 0 4px 20px rgba(168,85,247,0.5);
+    border: 2px solid rgba(255,255,255,0.3);
+    position: relative;
+  }
+  .shortcut-icon::after {
+    content: '✦';
+    position: absolute; top: -6px; right: -6px;
+    background: #f59e0b; color: white;
+    font-size: 8px; width: 16px; height: 16px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    border: 1.5px solid #0f172a;
+  }
+  .tap-ring {
+    animation: tapPulse 2s ease-in-out infinite;
+  }
+  @keyframes tapPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(168,85,247,0.5); }
+    50% { box-shadow: 0 4px 30px rgba(168,85,247,0.9), 0 0 0 8px rgba(168,85,247,0.15); }
+  }
+
+  /* Arrow */
+  .arrow {
+    font-size: 28px; color: rgba(168,85,247,0.6); margin-top: 180px;
+    animation: arrowBounce 1.5s ease-in-out infinite;
+  }
+  @keyframes arrowBounce {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(6px); }
+  }
+
+  /* Dialog screen */
+  .dialog-screen {
+    width: 100%; height: 100%;
+    background: linear-gradient(160deg, #1e1b4b 0%, #0f172a 60%);
+    padding: 52px 16px 16px;
+    position: relative;
+    filter: blur(2px);
+  }
+  .dialog-overlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .dialog-box {
+    background: rgba(30, 30, 46, 0.98);
+    border-radius: 18px;
+    padding: 20px 16px 14px;
+    width: 100%;
+    border: 1px solid rgba(255,255,255,0.15);
+    backdrop-filter: blur(20px);
+  }
+  .dialog-icon { font-size: 28px; text-align: center; margin-bottom: 8px; }
+  .dialog-title { font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 3px; }
+  .dialog-subtitle { font-size: 10px; color: #71717a; text-align: center; margin-bottom: 14px; }
+  .dialog-input {
+    background: rgba(255,255,255,0.08);
+    border: 1.5px solid rgba(168,85,247,0.6);
+    border-radius: 10px;
+    padding: 8px 10px;
+    font-size: 13px; color: white;
+    width: 100%;
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 10px;
+  }
+  .cursor { display: inline-block; width: 1.5px; height: 14px; background: #a855f7; animation: blink 1s step-end infinite; }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+  .dialog-btns { display: flex; gap: 8px; }
+  .btn-cancel {
+    flex: 1; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 600;
+    background: rgba(255,255,255,0.07); border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.5); text-align: center;
+  }
+  .btn-ok {
+    flex: 1; padding: 8px; border-radius: 10px; font-size: 12px; font-weight: 700;
+    background: linear-gradient(135deg, rgba(168,85,247,0.9), rgba(0,212,255,0.8));
+    color: white; text-align: center;
+  }
+
+  /* Result screen — app open */
+  .app-screen {
+    width: 100%; height: 100%;
+    background: #0f172a;
+    padding: 52px 0 0;
+    display: flex; flex-direction: column;
+  }
+  .app-header {
+    padding: 0 14px 12px;
+    display: flex; align-items: center; gap-8px; border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .app-header-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg,#a78bfa,#00d4ff);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; margin-right: 8px;
+  }
+  .app-header-title { font-size: 14px; font-weight: 700; }
+  .app-header-sub { font-size: 9px; color: #71717a; }
+
+  .chat-area { flex: 1; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+  .bubble-user {
+    align-self: flex-end;
+    background: linear-gradient(135deg,rgba(168,85,247,0.85),rgba(0,212,255,0.75));
+    padding: 8px 12px; border-radius: 16px 16px 3px 16px;
+    font-size: 12px; color: white; max-width: 80%;
+  }
+  .bubble-ai {
+    align-self: flex-start;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    padding: 8px 12px; border-radius: 16px 16px 16px 3px;
+    font-size: 11px; color: #e5edff; max-width: 85%;
+  }
+  .logged-card {
+    background: rgba(168,85,247,0.12);
+    border: 1px solid rgba(168,85,247,0.35);
+    border-radius: 12px; padding: 10px 12px;
+    font-size: 10px;
+  }
+  .logged-card-header { display: flex; justify-content: space-between; margin-bottom: 6px; }
+  .logged-card-title { font-size: 10px; font-weight: 700; color: #a855f7; }
+  .logged-card-kcal { font-size: 10px; color: #71717a; }
+  .logged-row { display: flex; justify-content: space-between; align-items: center; }
+  .logged-name { font-size: 11px; font-weight: 600; color: white; }
+  .logged-macros { font-size: 9px; color: #71717a; }
+  .logged-cal { font-size: 11px; font-weight: 700; color: #a855f7; }
+
+  .undo-bar {
+    margin: 4px 12px;
+    background: rgba(168,85,247,0.15);
+    border: 1px solid rgba(168,85,247,0.35);
+    border-radius: 12px; padding: 8px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .undo-text { font-size: 10px; font-weight: 600; color: white; }
+  .undo-btn { font-size: 9px; font-weight: 700; color: #a855f7; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; padding: 3px 8px; }
+
+  .tab-bar {
+    display: flex; border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 6px 0 10px;
+  }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .tab-icon { font-size: 16px; }
+  .tab-label { font-size: 8px; color: #71717a; }
+  .tab-label.active { color: #a855f7; }
+  .tab-icon.active { filter: drop-shadow(0 0 4px rgba(168,85,247,0.8)); }
+
+  .step-desc {
+    font-size: 12px; color: rgba(255,255,255,0.55); text-align: center;
+    max-width: 200px; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <h1>📱 Home Screen → Log Food Flow</h1>
+  <p class="subtitle">Tap shortcut icon → type food → app opens with it already logged</p>
+
+  <div class="flow">
+
+    <!-- Step 1: Home screen -->
+    <div class="step">
+      <div class="step-label">Step 1 — Tap icon</div>
+      <div class="phone">
+        <div class="home-bg">
+          <div class="time">9:41</div>
+          <div class="date-str">Saturday, May 9</div>
+          <div class="icon-grid">
+            <!-- Shortcut icon highlighted -->
+            <div class="icon-wrap">
+              <div class="app-icon shortcut-icon tap-ring">🍽️</div>
+              <div class="app-label" style="color:#a855f7;font-weight:700;">Log Food</div>
+            </div>
+            <div class="icon-wrap">
+              <div class="app-icon" style="background:#1e40af;">📸</div>
+              <div class="app-label">Camera</div>
+            </div>
+            <div class="icon-wrap">
+              <div class="app-icon" style="background:#065f46;">💬</div>
+              <div class="app-label">Messages</div>
+            </div>
+            <div class="icon-wrap">
+              <div class="app-icon" style="background:#7c3aed;">🎵</div>
+              <div class="app-label">Music</div>
+            </div>
+            <div class="icon-wrap">
+              <div class="app-icon" style="background:#b45309;">📦</div>
+              <div class="app-label">Files</div>
+            </div>
+            <div class="icon-wrap">
+              <div class="app-icon" style="background:#0369a1;">🗺️</div>
+              <div class="app-label">Maps</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-desc">Purple "Log Food" shortcut lives on your home screen. One tap.</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <!-- Step 2: Native text prompt -->
+    <div class="step">
+      <div class="step-label">Step 2 — Type food</div>
+      <div class="phone">
+        <div class="dialog-screen">
+          <div class="time" style="filter:blur(0)">9:41</div>
+        </div>
+        <div class="dialog-overlay">
+          <div class="dialog-box">
+            <div class="dialog-icon">🍽️</div>
+            <div class="dialog-title">What did you eat?</div>
+            <div class="dialog-subtitle">Metabo.ai will log it instantly</div>
+            <div class="dialog-input">
+              <span style="color:rgba(255,255,255,0.9)">chicken biryani</span>
+              <span class="cursor"></span>
+            </div>
+            <div class="dialog-btns">
+              <div class="btn-cancel">Cancel</div>
+              <div class="btn-ok">Log it →</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="step-desc">Native iOS prompt appears. Type anything casual — "biryani", "tea and biscuits", "big lunch".</div>
+    </div>
+
+    <div class="arrow">→</div>
+
+    <!-- Step 3: App open, already logged -->
+    <div class="step">
+      <div class="step-label">Step 3 — Done ✅</div>
+      <div class="phone">
+        <div class="app-screen">
+          <div class="app-header" style="display:flex;align-items:center;padding:0 14px 10px;">
+            <div class="app-header-icon">✨</div>
+            <div>
+              <div class="app-header-title">Cal Help</div>
+              <div class="app-header-sub">AI Nutrition · Powered by Claude</div>
+            </div>
+          </div>
+          <div class="chat-area">
+            <div class="bubble-user">chicken biryani</div>
+            <div class="bubble-ai">Nice choice! I've logged your chicken biryani. 🍛</div>
+            <div class="logged-card">
+              <div class="logged-card-header">
+                <span class="logged-card-title">✅ Logged</span>
+                <span class="logged-card-kcal">875 kcal total</span>
+              </div>
+              <div class="logged-row">
+                <div>
+                  <div class="logged-name">Chicken Biryani</div>
+                  <div class="logged-macros">350g · P52g C70g F28g</div>
+                </div>
+                <div class="logged-cal">875 kcal</div>
+              </div>
+            </div>
+          </div>
+          <div class="undo-bar">
+            <span class="undo-text">✅ Logged 1 item — 875 kcal</span>
+            <span class="undo-btn">↩ Undo</span>
+          </div>
+          <div class="tab-bar">
+            <div class="tab"><div class="tab-icon">📋</div><div class="tab-label">Today</div></div>
+            <div class="tab"><div class="tab-icon">📷</div><div class="tab-label">Add</div></div>
+            <div class="tab"><div class="tab-icon active">✨</div><div class="tab-label active" style="color:#a855f7">Cal Help</div></div>
+            <div class="tab"><div class="tab-icon">💪</div><div class="tab-label">Exercise</div></div>
+            <div class="tab"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="step-desc">App opens on Cal Help. Food already logged. Undo available for 5 seconds.</div>
+    </div>
+
+  </div>
+
+  <div style="margin-top:48px;max-width:540px;text-align:center;">
+    <div style="background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.25);border-radius:16px;padding:20px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;">⚡ Total time: ~4 seconds</div>
+      <div style="font-size:12px;color:#71717a;line-height:1.7;">
+        Tap → Type → Tap OK → Done.<br/>
+        Works even when app is closed. No navigating inside the app.<br/>
+        The Shortcut icon lives permanently on your home screen.
+      </div>
+    </div>
+  </div>
+</body>
+</html>

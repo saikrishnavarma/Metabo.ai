@@ -1,19 +1,21 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Trash2, Flame, Clock, ChevronRight, X, Check } from 'lucide-react'
-import { db, logExercise, todayKey, type ExerciseLog } from '../lib/db'
+import { db, logExercise, type ExerciseLog } from '../lib/db'
 import { EXERCISES, type ExerciseDef } from '../lib/exercises'
 import { useProfile } from '../hooks/useProfile'
 import { fmtTime } from '../lib/format'
+import { useDateContext } from '../context/DateContext'
 
 export default function ExercisePage() {
   const { profile } = useProfile()
   const weightKg = profile?.weightKg ?? 70
-  const today = todayKey()
+  const { selectedDate, isToday, isEditable, isArchived } = useDateContext()
 
-  const entries = useLiveQuery(() =>
-    db.exerciseLog.where('dateKey').equals(today).reverse().sortBy('loggedAt')
-  , [today]) ?? []
+  const entries = useLiveQuery(() => {
+    const table = isArchived ? db.archivedExerciseLog : db.exerciseLog
+    return table.where('dateKey').equals(selectedDate).reverse().sortBy('loggedAt')
+  }, [selectedDate, isArchived]) ?? []
 
   const totalBurned = entries.reduce((s, e) => s + e.kcalBurned, 0)
 
@@ -33,7 +35,7 @@ export default function ExercisePage() {
       emoji: selected.emoji,
       durationMin: duration,
       kcalBurned: kcalForDuration(selected, duration),
-    })
+    }, selectedDate)
     setLogged(true)
     setTimeout(() => { setSelected(null); setDuration(30); setLogged(false) }, 700)
   }
@@ -46,7 +48,7 @@ export default function ExercisePage() {
         style={{ background: 'linear-gradient(135deg, rgba(251,146,60,0.15), rgba(239,68,68,0.1))', border: '1px solid rgba(251,146,60,0.25)' }}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#fb923c' }}>Burned today</div>
+            <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: '#fb923c' }}>{isArchived ? 'Burned (archived)' : isToday ? 'Burned today' : 'Burned this day'}</div>
             <div className="text-3xl font-extrabold text-white mt-1">{Math.round(totalBurned)}</div>
             <div className="text-xs mt-0.5" style={{ color: '#71717a' }}>kcal · {entries.length} {entries.length === 1 ? 'activity' : 'activities'}</div>
           </div>
@@ -57,32 +59,38 @@ export default function ExercisePage() {
         </div>
       </section>
 
-      {/* Exercise picker */}
-      <section className="card">
-        <h3 className="label mb-3">Pick an activity</h3>
-        <div className="grid grid-cols-2 gap-2">
-          {EXERCISES.map(ex => (
-            <button
-              key={ex.id}
-              onClick={() => { setSelected(ex); setDuration(30); setLogged(false) }}
-              className="flex items-center gap-3 p-3 rounded-xl border text-left transition-all"
-              style={selected?.id === ex.id
-                ? { background: 'rgba(168,85,247,0.18)', borderColor: 'rgba(168,85,247,0.55)', boxShadow: '0 0 14px rgba(168,85,247,0.15), inset 0 1px 0 rgba(255,255,255,0.12)' }
-                : { background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.09)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
-            >
-              <span className="text-2xl">{ex.emoji}</span>
-              <div className="min-w-0">
-                <div className="text-sm font-semibold truncate text-white">{ex.name}</div>
-                <div className="text-[11px]" style={{ color: '#71717a' }}>{kcalForDuration(ex, 30)} kcal/30m</div>
-              </div>
-              {selected?.id === ex.id && <ChevronRight size={14} style={{ color: '#a855f7' }} className="ml-auto shrink-0" />}
-            </button>
-          ))}
+      {/* Exercise picker — available for all editable days */}
+      {isArchived && (
+        <div className="text-sm text-center py-4" style={{ color: '#71717a' }}>
+          Archived — read only.
         </div>
-      </section>
+      )}
+      {isEditable && <>
+        <section className="card">
+          <h3 className="label mb-3">Pick an activity</h3>
+          <div className="grid grid-cols-2 gap-2">
+            {EXERCISES.map(ex => (
+              <button
+                key={ex.id}
+                onClick={() => { setSelected(ex); setDuration(30); setLogged(false) }}
+                className="flex items-center gap-3 p-3 rounded-xl border text-left transition-all"
+                style={selected?.id === ex.id
+                  ? { background: 'rgba(168,85,247,0.18)', borderColor: 'rgba(168,85,247,0.55)', boxShadow: '0 0 14px rgba(168,85,247,0.15), inset 0 1px 0 rgba(255,255,255,0.12)' }
+                  : { background: 'rgba(255,255,255,0.05)', borderColor: 'rgba(255,255,255,0.09)', boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
+              >
+                <span className="text-2xl">{ex.emoji}</span>
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold truncate text-white">{ex.name}</div>
+                  <div className="text-[11px]" style={{ color: '#71717a' }}>{kcalForDuration(ex, 30)} kcal/30m</div>
+                </div>
+                {selected?.id === ex.id && <ChevronRight size={14} style={{ color: '#a855f7' }} className="ml-auto shrink-0" />}
+              </button>
+            ))}
+          </div>
+        </section>
 
-      {/* Duration + log panel */}
-      {selected && (
+        {/* Duration + log panel */}
+        {selected && (
         <section className="card space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -161,16 +169,17 @@ export default function ExercisePage() {
               ? <span className="flex items-center justify-center gap-2"><Check size={16}/> Logged!</span>
               : <span className="flex items-center justify-center gap-2"><Flame size={16}/> Log {kcalForDuration(selected, duration)} kcal burned</span>}
           </button>
-        </section>
-      )}
+          </section>
+        )}
+      </>}
 
-      {/* Today's exercise log */}
+      {/* Exercise log for selected date */}
       {entries.length > 0 && (
         <section className="card">
-          <h3 className="label mb-3">Today's activities</h3>
+          <h3 className="label mb-3">Activities</h3>
           <ul className="space-y-2">
             {entries.map(e => (
-              <ExerciseRow key={e.id} entry={e} />
+              <ExerciseRow key={e.id} entry={e} canDelete={isEditable} />
             ))}
           </ul>
         </section>
@@ -179,7 +188,7 @@ export default function ExercisePage() {
   )
 }
 
-function ExerciseRow({ entry }: { entry: ExerciseLog }) {
+function ExerciseRow({ entry, canDelete }: { entry: ExerciseLog; canDelete: boolean }) {
   return (
     <li className="flex items-center gap-3 py-2 border-b last:border-0" style={{ borderColor: 'rgba(255,255,255,0.08)' }}>
       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
@@ -194,13 +203,15 @@ function ExerciseRow({ entry }: { entry: ExerciseLog }) {
         <div className="font-bold" style={{ color: '#fb923c' }}>−{Math.round(entry.kcalBurned)}</div>
         <div className="text-[10px]" style={{ color: '#71717a' }}>kcal</div>
       </div>
-      <button
-        onClick={() => entry.id && db.exerciseLog.delete(entry.id)}
-        className="p-1.5 rounded-lg"
-        style={{ color: '#71717a' }}
-      >
-        <Trash2 size={15} />
-      </button>
+      {canDelete && (
+        <button
+          onClick={() => entry.id && db.exerciseLog.delete(entry.id)}
+          className="p-1.5 rounded-lg"
+          style={{ color: '#71717a' }}
+        >
+          <Trash2 size={15} />
+        </button>
+      )}
     </li>
   )
 }

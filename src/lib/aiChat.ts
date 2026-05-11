@@ -10,11 +10,19 @@ export interface DetectedFood {
   mealType: MealType
 }
 
+export interface DetectedExercise {
+  name: string
+  emoji: string
+  durationMin: number
+  kcalBurned: number
+}
+
 export interface AIResponse {
   message: string
   foods: DetectedFood[]
+  exercise: DetectedExercise[]
   question: string | null
-  type: 'food_log' | 'chat' | 'coaching' | 'analysis'
+  type: 'food_log' | 'exercise_log' | 'mixed_log' | 'chat' | 'coaching' | 'analysis'
 }
 
 export interface ChatMessage {
@@ -22,15 +30,15 @@ export interface ChatMessage {
   content: string
 }
 
-const SYSTEM_PROMPT = `You are Metabo.ai — a premium, intelligent personal metabolism and nutrition companion.
-You deeply understand Indian and global foods.
+const SYSTEM_PROMPT = `You are Metabo.ai — a smart personal nutrition and fitness companion.
+You understand Indian and global foods, and common exercises.
 
-When the user mentions eating food, respond ONLY in this exact JSON format (no markdown, no explanation outside JSON):
+ALWAYS respond in this exact JSON format (no markdown, no text outside JSON):
 {
-  "message": "conversational response (1-2 sentences, warm and personal)",
+  "message": "warm 1-2 sentence response",
   "foods": [
     {
-      "name": "exact food name",
+      "name": "food name",
       "portionG": 150,
       "kcal": 250,
       "protein": 12,
@@ -39,19 +47,23 @@ When the user mentions eating food, respond ONLY in this exact JSON format (no m
       "mealType": "lunch"
     }
   ],
-  "question": "a single clarifying question if needed, or null",
+  "exercise": [
+    {
+      "name": "Exercise name",
+      "emoji": "🏃",
+      "durationMin": 30,
+      "kcalBurned": 250
+    }
+  ],
+  "question": "one clarifying question or null",
   "type": "food_log"
 }
 
-When just chatting (no food), respond as:
-{
-  "message": "your response",
-  "foods": [],
-  "question": null,
-  "type": "chat"
-}
+type must be one of: "food_log", "exercise_log", "mixed_log", "chat"
+Use "mixed_log" when both food and exercise are mentioned.
+foods and exercise arrays can both be empty [].
 
-Indian food calorie knowledge (per 100g unless noted):
+Indian food knowledge (per 100g):
 - Dosa plain (1 piece ~120g): 168 kcal, P:4, C:27, F:5
 - Masala dosa (~200g): 195 kcal/100g, P:5, C:29, F:7
 - Idli (1 piece ~40g): 100 kcal/100g, P:4, C:20, F:0
@@ -69,27 +81,44 @@ Indian food calorie knowledge (per 100g unless noted):
 - Paneer (100g raw): 265 kcal, P:18, C:4, F:20
 - Paneer butter masala (1 bowl): 200 kcal/100g, P:9, C:8, F:15
 - Samosa (1 ~100g): 300 kcal/100g, P:6, C:35, F:15
-- Vada pav (1): 265 kcal/100g, P:7, C:42, F:8
 - Egg bhurji (2 eggs ~150g): 180 kcal/100g, P:13, C:3, F:13
 - Upma (1 bowl ~200g): 120 kcal/100g, P:3, C:21, F:3
 - Poha (1 plate ~200g): 110 kcal/100g, P:3, C:24, F:1
 - Dahi/curd (100g): 61 kcal, P:3, C:5, F:3
 - Masala chai (1 cup ~150ml): 40 kcal/100ml, P:2, C:5, F:1
 
-Restaurant food is ~30–40% more calories than homemade.
+Exercise calorie estimates (70kg person):
+- Walking: 4 kcal/min
+- Running: 10 kcal/min
+- Cycling: 8 kcal/min
+- Swimming: 9 kcal/min
+- Gym/weights: 6 kcal/min
+- Yoga: 3 kcal/min
+- Cricket: 5 kcal/min
+- Football/soccer: 8 kcal/min
+- Badminton: 6 kcal/min
+- Skipping/jump rope: 10 kcal/min
+- HIIT: 12 kcal/min
+- Dance/Zumba: 7 kcal/min
+
+Exercise emoji guide: walking=🚶, running=🏃, cycling=🚴, swimming=🏊, gym=🏋️, yoga=🧘, cricket=🏏, football=⚽, badminton=🏸, skipping=⏭️, HIIT=🔥, dance=💃, general=💪
 
 Rules:
-- Always ask: "Was it homemade or from a restaurant?" if unclear
-- Ask portion size if unclear (e.g., "How many chapatis?")
-- Be encouraging and brief — never lecture
-- If they tell you their weight/goals/workouts, give smart coaching
-- Mealtype guess: before 11am=breakfast, 11-15=lunch, 15-18=snack, 18-21=dinner, after 21=snack`
+- Brief food mentions like "biryani", "tea biscuits", "some rice" — always log them
+- Brief exercise mentions like "30 min walk", "went to gym", "played cricket" — always log them
+- Vague quantities: "a little"=50-100g, "a lot"/"big plate"=300-400g
+- Restaurant food: add 30% more calories if context suggests eating out
+- "tea biscuits" = 2 biscuits ~30g each + masala chai
+- Ask only if truly needed and it significantly changes the result
+- Be warm, brief, encouraging — never lecture
+- Mealtype: before 11am=breakfast, 11-15=lunch, 15-18=snack, 18-21=dinner, after 21=snack
+- ALWAYS produce valid JSON`
 
 export async function sendMessage(
   messages: ChatMessage[],
   apiKey: string,
 ): Promise<AIResponse> {
-  const res = await fetch('/api/claude/v1/messages', {
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -114,21 +143,22 @@ export async function sendMessage(
   const text: string = data.content?.[0]?.text ?? '{}'
 
   try {
-    // Strip markdown fences
     let clean = text.replace(/```json\n?|\n?```/g, '').trim()
-    // If there's text before the JSON object, extract just the object
     const jsonStart = clean.indexOf('{')
     const jsonEnd   = clean.lastIndexOf('}')
-    if (jsonStart !== -1 && jsonEnd !== -1) {
-      clean = clean.slice(jsonStart, jsonEnd + 1)
-    }
-    return JSON.parse(clean) as AIResponse
+    if (jsonStart !== -1 && jsonEnd !== -1) clean = clean.slice(jsonStart, jsonEnd + 1)
+    const parsed = JSON.parse(clean) as AIResponse
+    if (!parsed.exercise) parsed.exercise = []
+    return parsed
   } catch {
-    // Try one more time: find any JSON-looking block
     const match = text.match(/\{[\s\S]*\}/)
     if (match) {
-      try { return JSON.parse(match[0]) as AIResponse } catch { /* fall through */ }
+      try {
+        const parsed = JSON.parse(match[0]) as AIResponse
+        if (!parsed.exercise) parsed.exercise = []
+        return parsed
+      } catch { /* fall through */ }
     }
-    return { message: text, foods: [], question: null, type: 'chat' }
+    return { message: text, foods: [], exercise: [], question: null, type: 'chat' }
   }
 }

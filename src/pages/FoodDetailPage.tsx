@@ -7,6 +7,7 @@ import MacroPills from '../components/MacroPills'
 import ExerciseList from '../components/ExerciseList'
 import { useProfile } from '../hooks/useProfile'
 import { macrosForPortion } from '../lib/format'
+import { useDateContext } from '../context/DateContext'
 
 const MEALS: { id: MealType; label: string }[] = [
   { id: 'breakfast', label: 'Breakfast' },
@@ -21,6 +22,7 @@ export default function FoodDetailPage() {
   const foodId = Number(id)
   const food = useLiveQuery(() => db.foods.get(foodId), [foodId])
   const { profile } = useProfile()
+  const { selectedDate } = useDateContext()
   const [portionG, setPortionG] = useState<number | null>(null)
   const [meal, setMeal] = useState<MealType>(currentMeal())
   const [logged, setLogged] = useState(false)
@@ -32,7 +34,7 @@ export default function FoodDetailPage() {
 
   async function save() {
     if (!food || food.id == null) return
-    await logFood(food.id, portion, meal)
+    await logFood(food.id, portion, meal, selectedDate)
     setLogged(true)
     setTimeout(() => nav('/history'), 600)
   }

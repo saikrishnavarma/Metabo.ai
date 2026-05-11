@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft, Plus, Check } from 'lucide-react'
 import { db, logFood, type MealType } from '../lib/db'
+import { useDateContext } from '../context/DateContext'
 
 const MEALS: { id: MealType; label: string; emoji: string }[] = [
   { id: 'breakfast', label: 'Breakfast', emoji: '🌅' },
@@ -20,6 +21,7 @@ function currentMeal(): MealType {
 
 export default function ManualEntryPage() {
   const nav = useNavigate()
+  const { selectedDate } = useDateContext()
   const [name, setName]       = useState('')
   const [kcal, setKcal]       = useState('')
   const [protein, setProtein] = useState('')
@@ -51,7 +53,7 @@ export default function ManualEntryPage() {
       createdAt: Date.now(),
     })
 
-    await logFood(foodId as number, portionG, meal)
+    await logFood(foodId as number, portionG, meal, selectedDate)
     setLogged(true)
     setTimeout(() => nav('/'), 600)
   }

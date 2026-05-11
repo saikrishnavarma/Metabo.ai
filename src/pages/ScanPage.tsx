@@ -3,17 +3,19 @@ import { useNavigate } from 'react-router-dom'
 import { ScanBarcode, Search, PenLine, Loader2, ChevronDown, ChevronUp } from 'lucide-react'
 import BarcodeScanner from '../components/BarcodeScanner'
 import { lookupBarcode, offToFood } from '../lib/api/openfoodfacts'
-import { upsertFoodByExternalId, db, logFood } from '../lib/db'
+import { upsertFoodByExternalId, logFood } from '../lib/db'
 import { INDIAN_FOODS, INDIAN_FOOD_CATEGORIES } from '../lib/indianFoods'
 import { useProfile } from '../hooks/useProfile'
+import { useDateContext } from '../context/DateContext'
 
 export default function ScanPage() {
   const nav = useNavigate()
   const { profile } = useProfile()
+  const { selectedDate } = useDateContext()
   const [scannerOpen, setScannerOpen] = useState(false)
   const [busy,  setBusy]  = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [showIndian, setShowIndian] = useState(true)
+  const [showIndian, setShowIndian] = useState(false)
   const [category, setCategory] = useState('All')
   const [loggedId, setLoggedId] = useState<string | null>(null)
 
@@ -30,8 +32,8 @@ export default function ScanPage() {
 
   async function quickLogIndian(idx: number) {
     const food = INDIAN_FOODS[idx]
-    const id = await db.foods.add({ ...food, createdAt: Date.now() }) as number
-    await logFood(id, food.defaultPortionG, guessMeal())
+    const id = await upsertFoodByExternalId({ ...food, externalId: `indian-${food.name}` })
+    await logFood(id, food.defaultPortionG, guessMeal(), selectedDate)
     setLoggedId(`${idx}-${Date.now()}`)
     setTimeout(() => setLoggedId(null), 1500)
   }
@@ -79,7 +81,7 @@ export default function ScanPage() {
           </div>
           <div>
             <div className="font-semibold text-white text-sm">Search foods</div>
-            <div className="text-xs mt-0.5" style={{ color: '#71717a' }}>OpenFoodFacts — millions of products</div>
+            <div className="text-xs mt-0.5" style={{ color: '#71717a' }}>USDA + OpenFoodFacts — 300,000+ foods</div>
           </div>
         </button>
 
